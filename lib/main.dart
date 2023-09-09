@@ -22,7 +22,7 @@ class _PCControlAppState extends State<PCControlApp> {
   int port = 8085;
   String password = "powersw";
   bool isDarkTheme = false;
-  bool isEnglish = true; // Default language is English
+  bool isEnglish = false;
 
   @override
   void initState() {
