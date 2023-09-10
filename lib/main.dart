@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
+import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -24,11 +25,35 @@ class _PCControlAppState extends State<PCControlApp> {
   bool isDarkTheme = false;
   bool isEnglish = false;
 
+  Timer? statusPollingTimer;
+
+  void startStatusPolling() {
+    const Duration pollingInterval = Duration(seconds: 1);
+    statusPollingTimer = Timer.periodic(pollingInterval, (Timer timer) async {
+      String status = await checkPCStatus();
+      setState(() {
+      });
+    });
+  }
+
+  void stopStatusPolling() {
+    if (statusPollingTimer != null && statusPollingTimer!.isActive) {
+      statusPollingTimer!.cancel();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     loadSavedData();
+    startStatusPolling();
   }
+
+  @override
+void dispose() {
+  stopStatusPolling();
+  super.dispose();
+}
 
   Future<void> loadSavedData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -65,14 +90,14 @@ class _PCControlAppState extends State<PCControlApp> {
 
       if (response.statusCode == 200) {
         if (response.body == 'Device Online') {
-          return isEnglish ? 'Online' : 'Komputer Hidup';
+          return isEnglish ? 'Device Online' : 'Device Hidup';
         } else {
-          return isEnglish ? 'Offline' : 'Komputer Mati';
+          return isEnglish ? 'Device Offline' : 'Device Mati';
         }
       } else {
         return isEnglish
-            ? 'Failed to check computer status: ${response.statusCode}'
-            : 'Gagal memeriksa status komputer: ${response.statusCode}';
+            ? 'Failed to check Device status: ${response.statusCode}'
+            : 'Gagal memeriksa status Device: ${response.statusCode}';
       }
     } catch (e) {
       return isEnglish
@@ -84,18 +109,18 @@ class _PCControlAppState extends State<PCControlApp> {
   Future<void> turnOnPC() async {
     final response = await http.get(Uri.parse('http://$ipAddress:$port/short?key=$password'));
     if (response.statusCode == 200) {
-      showNotification(isEnglish ? "Computer is turned on" : "Komputer telah diaktifkan");
+      showNotification(isEnglish ? "Device is turned on" : "Device telah diaktifkan");
     } else {
-      showNotification(isEnglish ? "Failed to turn on the computer: ${response.statusCode}" : "Gagal mengaktifkan komputer: ${response.statusCode}");
+      showNotification(isEnglish ? "Failed to turn on the Device: ${response.statusCode}" : "Gagal mengaktifkan Device: ${response.statusCode}");
     }
   }
 
   Future<void> turnOffPC() async {
     final response = await http.get(Uri.parse('http://$ipAddress:$port/long?key=$password'));
     if (response.statusCode == 200) {
-      showNotification(isEnglish ? "Computer is turned off" : "Komputer telah dimatikan");
+      showNotification(isEnglish ? "Device is turned off" : "Device telah dimatikan");
     } else {
-      showNotification(isEnglish ? "Failed to turn off the computer: ${response.statusCode}" : "Gagal mematikan komputer: ${response.statusCode}");
+      showNotification(isEnglish ? "Failed to turn off the Device: ${response.statusCode}" : "Gagal mematikan Devicer: ${response.statusCode}");
     }
   }
 
@@ -172,39 +197,39 @@ class _PCControlAppState extends State<PCControlApp> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: isDarkTheme ? ThemeData.dark() : ThemeData.light(),
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Nwake'),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.lightbulb_outline),
-              onPressed: toggleTheme,
-            ),
-            IconButton(
-              icon: Icon(isEnglish ? Icons.language : Icons.translate),
-              onPressed: toggleLanguage,
-            ),
-          ],
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              FutureBuilder<String>(
+@override
+Widget build(BuildContext context) {
+  return MaterialApp(
+    theme: isDarkTheme ? ThemeData.dark() : ThemeData.light(),
+    home: Scaffold(
+      appBar: AppBar(
+        title: Text('Nwake'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.lightbulb_outline),
+            onPressed: toggleTheme,
+          ),
+          IconButton(
+            icon: Icon(isEnglish ? Icons.language : Icons.translate),
+            onPressed: toggleLanguage,
+          ),
+        ],
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 20.0),
+              child: FutureBuilder<String>(
                 future: checkPCStatus(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return CircularProgressIndicator();
-                  } else if (snapshot.hasError) {
+                  if (snapshot.hasError) {
                     return Text(
                       isEnglish
                           ? 'Failed to fetch status'
                           : 'Gagal mengambil status',
-                      style: TextStyle(color: Colors.red),
+                      style: TextStyle(color: Colors.red, fontSize: 18),
                     );
                   } else {
                     return Text(
@@ -214,55 +239,56 @@ class _PCControlAppState extends State<PCControlApp> {
                   }
                 },
               ),
-              ElevatedButton(
-                onPressed: () {
-                  if (ipAddress != null && ipAddress!.isNotEmpty) {
-                    turnOnPC();
-                  } else {
-                    showNotification(isEnglish ? "IP Address is not set." : "Alamat IP GET belum diatur.");
-                  }
-                },
-                child: Text(
-                  isEnglish ? 'Turn On' : 'Nyalakan',
-                  style: TextStyle(fontSize: 20),
-                ),
-                style: ElevatedButton.styleFrom(
-                  primary: Color.fromARGB(255, 13, 218, 41),
-                  minimumSize: Size(200, 60),
-                ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (ipAddress != null && ipAddress!.isNotEmpty) {
+                  turnOnPC();
+                } else {
+                  showNotification(isEnglish ? "IP Address is not set." : "Alamat IP GET belum diatur.");
+                }
+              },
+              child: Text(
+                isEnglish ? 'Turn On' : 'Nyalakan',
+                style: TextStyle(fontSize: 20),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  if (ipAddress != null && ipAddress!.isNotEmpty) {
-                    turnOffPC();
-                  } else {
-                    showNotification(isEnglish ? "IP Address is not set." : "Alamat IP GET belum diatur.");
-                  }
-                },
-                child: Text(
-                  isEnglish ? 'Turn Off' : 'Matikan',
-                  style: TextStyle(fontSize: 20),
-                ),
-                style: ElevatedButton.styleFrom(
-                  primary: Color.fromARGB(255, 216, 42, 19),
-                  minimumSize: Size(200, 60),
-                ),
+              style: ElevatedButton.styleFrom(
+                primary: Color.fromARGB(255, 13, 218, 41),
+                minimumSize: Size(200, 60),
               ),
-              ElevatedButton(
-                onPressed: showIpDialog,
-                child: Text(
-                  isEnglish ? 'Set IP Address' : 'Atur Alamat IP',
-                  style: TextStyle(fontSize: 20),
-                ),
-                style: ElevatedButton.styleFrom(
-                  primary: Colors.blue,
-                  minimumSize: Size(200, 60),
-                ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (ipAddress != null && ipAddress!.isNotEmpty) {
+                  turnOffPC();
+                } else {
+                  showNotification(isEnglish ? "IP Address is not set." : "Alamat IP GET belum diatur.");
+                }
+              },
+              child: Text(
+                isEnglish ? 'Turn Off' : 'Matikan',
+                style: TextStyle(fontSize: 20),
               ),
-            ],
-          ),
+              style: ElevatedButton.styleFrom(
+                primary: Color.fromARGB(255, 216, 42, 19),
+                minimumSize: Size(200, 60),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: showIpDialog,
+              child: Text(
+                isEnglish ? 'Set IP Address' : 'Atur Alamat IP',
+                style: TextStyle(fontSize: 20),
+              ),
+              style: ElevatedButton.styleFrom(
+                primary: Colors.blue,
+                minimumSize: Size(200, 60),
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
