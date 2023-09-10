@@ -61,7 +61,7 @@ class _PCControlAppState extends State<PCControlApp> {
   Future<String> checkPCStatus() async {
     try {
       final response = await http.get(
-          Uri.parse('http://$ipAddress:$port/getstatus?key=$password'));
+          Uri.parse('http://$ipAddress:$port/statuspc?key=$password'));
 
       if (response.statusCode == 200) {
         if (response.body == 'Device Online') {
