@@ -82,7 +82,7 @@ class _PCControlAppState extends State<PCControlApp> {
   }
 
   Future<void> turnOnPC() async {
-    final response = await http.get(Uri.parse('$ipAddress:$port/short?key=$password'));
+    final response = await http.get(Uri.parse('http://$ipAddress:$port/short?key=$password'));
     if (response.statusCode == 200) {
       showNotification(isEnglish ? "Computer is turned on" : "Komputer telah diaktifkan");
     } else {
@@ -91,7 +91,7 @@ class _PCControlAppState extends State<PCControlApp> {
   }
 
   Future<void> turnOffPC() async {
-    final response = await http.get(Uri.parse('$ipAddress:$port/long?key=$password'));
+    final response = await http.get(Uri.parse('http://$ipAddress:$port/long?key=$password'));
     if (response.statusCode == 200) {
       showNotification(isEnglish ? "Computer is turned off" : "Komputer telah dimatikan");
     } else {
@@ -115,7 +115,7 @@ class _PCControlAppState extends State<PCControlApp> {
                     ipAddress = value;
                   });
                 },
-                decoration: InputDecoration(hintText: isEnglish ? "Example: http://192.168.1.X" : "Contoh: http://192.168.1.X"),
+                decoration: InputDecoration(hintText: isEnglish ? "Example: 192.168.1.X" : "Contoh: 192.168.1.X"),
               ),
               Text(isEnglish ? "Enter port (optional):" : "Masukkan port (opsional):"),
               TextField(
