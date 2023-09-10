@@ -58,6 +58,29 @@ class _PCControlAppState extends State<PCControlApp> {
     );
   }
 
+  Future<String> checkPCStatus() async {
+    try {
+      final response = await http.get(
+          Uri.parse('http://$ipAddress:$port/getstatus?key=$password'));
+
+      if (response.statusCode == 200) {
+        if (response.body == 'Device Online') {
+          return isEnglish ? 'Online' : 'Komputer Hidup';
+        } else {
+          return isEnglish ? 'Offline' : 'Komputer Mati';
+        }
+      } else {
+        return isEnglish
+            ? 'Failed to check computer status: ${response.statusCode}'
+            : 'Gagal memeriksa status komputer: ${response.statusCode}';
+      }
+    } catch (e) {
+      return isEnglish
+          ? 'Error: $e'
+          : 'Terjadi kesalahan: $e';
+    }
+  }
+
   Future<void> turnOnPC() async {
     final response = await http.get(Uri.parse('$ipAddress:$port/short?key=$password'));
     if (response.statusCode == 200) {
@@ -171,6 +194,26 @@ class _PCControlAppState extends State<PCControlApp> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
+              FutureBuilder<String>(
+                future: checkPCStatus(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text(
+                      isEnglish
+                          ? 'Failed to fetch status'
+                          : 'Gagal mengambil status',
+                      style: TextStyle(color: Colors.red),
+                    );
+                  } else {
+                    return Text(
+                      isEnglish ? '${snapshot.data}' : '${snapshot.data}',
+                      style: TextStyle(fontSize: 18),
+                    );
+                  }
+                },
+              ),
               ElevatedButton(
                 onPressed: () {
                   if (ipAddress != null && ipAddress!.isNotEmpty) {
